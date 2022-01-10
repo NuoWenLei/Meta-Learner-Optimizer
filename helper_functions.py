@@ -31,3 +31,7 @@ def accuracy_try(output, target):
   # Calculate percentage accuracy in batch
   return tf.reduce_sum(tf.cast(correct, tf.float32)) / tf.cast(batch_size, tf.float32)
 
+# Callback function for saving the latest metalearner weights
+def checkpoint(m, path):
+  m.save_weights(f"{path}/model")
+
