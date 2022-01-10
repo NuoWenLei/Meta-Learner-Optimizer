@@ -27,18 +27,27 @@ Label and Description:
 
 class DataLoader():
 
-	def __init__(self, num_shot, num_shot_eval, num_classes):
-		self.num_shot = num_shot
-		self.num_shot_eval = num_shot_eval
+	def __init__(self, args):
+		self.num_shot = args["num_shot"]
+		self.num_shot_eval = args['num_shot_eval']
 
 		# Get the total number of samples for each class needed for a batch of Level 1 datasets
-		self.num_of_class_per_dataset = num_shot + num_shot_eval
+		self.num_of_class_per_dataset = args["num_shot"] + args["num_shot_eval"]
 
-		self.num_classes = num_classes
+		self.num_classes = args["num_classes"]
+
+	def get_fashion_mnist(self):
+		(X_train, y_train), (X_test, y_test) = tf.keras.datasets.fashion_mnist.load_data()
+
+		y_train = self.to_onehot(y_train)
+
+		y_test = self.to_onehot(y_test)
+
+		return X_train / 255., X_test / 255., y_train, y_test
 
 	# Convert labels to one-hot format for ease of classification.
-	def to_onehot(data, num_classes):
-		new_data = np.zeros((data.shape[0], num_classes))
+	def to_onehot(self, data):
+		new_data = np.zeros((data.shape[0], self.num_classes))
 		new_data[np.arange(0, data.shape[0]), data] = 1.
 		return new_data
 	
@@ -122,6 +131,13 @@ class DataLoader():
 				"y": np.concatenate(D_y_test, axis = 0)
 				}})
 		return datasets
+
+	# Function for creating training generators
+	def create_flow(self, D_meta):
+		max_index = len(D_meta)
+		indicies = np.random.permutation(max_index)
+		for i in indicies:
+			yield D_meta[i]
 
 	def __repr__(self):
 		return f"Train Num Shot: {self.num_shot}\nEval Num Shot: {self.num_shot_eval}\nNum Classes: {self.num_classes}"

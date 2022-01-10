@@ -1,23 +1,23 @@
 import tensorflow as tf
 from tensorflow.keras.layers import *
 from tensorflow.keras.models import Model
-from functional_layers import *
+from structures.functional_layers import *
 from helper_functions import *
 
 class Learner():
 
-	def __init__(self, filters, use_bias, image_dims, num_classes, padding = "SAME", kernel_size = 3, num_blocks = 2, maxpool_size = 2):
+	def __init__(self, args):
 
 		super().__init__()
-		self.filters = filters
-		self.use_bias = use_bias
-		self.img_x = image_dims[0]
-		self.img_y = image_dims[1]
-		self.padding = padding
-		self.kernel_size = (kernel_size, kernel_size)
-		self.num_blocks = num_blocks
-		self.maxpool_size = (maxpool_size, maxpool_size)
-		self.num_classes = num_classes
+		self.filters = args["filters"]
+		self.use_bias = args["use_bias"]
+		self.img_x = args["img_x"]
+		self.img_y = args["img_y"]
+		self.padding = args["padding"]
+		self.kernel_size = (args["kernel_size"], args["kernel_size"])
+		self.num_blocks = args["num_blocks"]
+		self.maxpool_size = (args["maxpool_size"], args["maxpool_size"])
+		self.num_classes = args["num_classes"]
 
 		self.model = self.get_learner_model()
 
@@ -25,7 +25,9 @@ class Learner():
 			"conv2d": get_conv_func(self.padding, self.use_bias),
 			"dense": get_dense_func(self.use_bias)
 		}
-	
+		
+	def reset_model(self):
+		self.model = self.get_learner_model()
 
 	# Create a fully function-based implementation of a learner model
 	# based on its original structure
@@ -88,7 +90,7 @@ class Learner():
 		inputs = Input(shape = (self.img_x, self.img_y, 1))
 		x = inputs
 		for _ in range(self.num_blocks - 1):
-			x = self.learner_block(x, self.use_bias)
+			x = self.learner_block(x)
 		x = Conv2D(self.filters, self.kernel_size, use_bias = self.use_bias, padding = self.padding)(x)
 		x = ReLU()(x)
 		flattened = Flatten()(x)

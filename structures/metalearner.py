@@ -2,11 +2,11 @@ import tensorflow as tf
 
 # Special Meta LSTM cell that is very similar to normal LSTM cells but uses different weights
 class MetaLSTMCell(tf.keras.layers.Layer):
-	def __init__(self, input_size, hidden_size, learner_param_size, batch_size):
+	def __init__(self, args, learner_param_size):
 		super(MetaLSTMCell, self).__init__()
 
-		self.input_size = input_size
-		self.hidden_size = hidden_size
+		self.input_size = args["input_size"]
+		self.hidden_size = args["hidden_size"]
 		self.learner_param_size = learner_param_size
 
 		# Weight initializers
@@ -17,12 +17,12 @@ class MetaLSTMCell(tf.keras.layers.Layer):
 		# This is what got me stuck for a week because I didn't realize that
 		# if the meta-learner didn't make big changes to the gradient in the beginning (due to small weights and biases),
 		# the meta-learner just wouldn't do gradient descent because all the weights are so small.
-		self.uniform_initializer_bI = tf.random_uniform_initializer(minval = -5., maxval = -4.)
-		self.uniform_initializer_bF = tf.random_uniform_initializer(minval = 4., maxval = 5.)
+		self.uniform_initializer_bI = tf.random_uniform_initializer(minval = args["bI_init_1"], maxval = args["bI_init_0"])
+		self.uniform_initializer_bF = tf.random_uniform_initializer(minval = args["bF_init_0"], maxval = args["bF_init_1"])
 
 		# Initialization of weights/kernels and biases of the meta-learner
-		self.W_i = tf.Variable(self.uniform_initializer(shape = [input_size + 2, 1], dtype = tf.float32))
-		self.W_f = tf.Variable(self.uniform_initializer(shape = [input_size + 2, 1], dtype = tf.float32))
+		self.W_i = tf.Variable(self.uniform_initializer(shape = [self.input_size + 2, 1], dtype = tf.float32))
+		self.W_f = tf.Variable(self.uniform_initializer(shape = [self.input_size + 2, 1], dtype = tf.float32))
 
 		self.b_i = tf.Variable(self.uniform_initializer_bI(shape = (1, 1), dtype = tf.float32))
 		self.b_f = tf.Variable(self.uniform_initializer_bF(shape = (1, 1), dtype = tf.float32))
@@ -121,17 +121,16 @@ class MetaLSTMCell(tf.keras.layers.Layer):
 
 # Overall MetaLearner Class
 class MetaLearner(tf.keras.models.Model):
-	def __init__(self, input_size, hidden_size, learner_param_size, batch_size):
+	def __init__(self, args, learner_param_size):
 		super(MetaLearner, self).__init__()
 
-		self.input_size = input_size
-		self.batch_size = batch_size
-		self.hidden_size = hidden_size
+		self.input_size = args["input_size"]
+		self.hidden_size = args["hidden_size"]
 		self.learner_param_size = learner_param_size
 
 		# Create LSTM cell and Meta LSTM cell with appropriate parameters
-		self.lstm_cell = tf.keras.layers.LSTMCell(hidden_size, activation = "relu")
-		self.meta_lstm = MetaLSTMCell(hidden_size, hidden_size, learner_param_size, batch_size)
+		self.lstm_cell = tf.keras.layers.LSTMCell(self.hidden_size, activation = "relu")
+		self.meta_lstm = MetaLSTMCell(args, learner_param_size)
 
 	def call(self, inputs, hidden_states = None, c_i = None):
 		"""
